@@ -15,7 +15,9 @@ func main() {
 	// }
 	// server.ListenAndServe()
 
-	http.HandleFunc("/functions", functions)
+	http.HandleFunc("/function", function)
+	http.HandleFunc("/metrics", metrics)
+	http.HandleFunc("/call", call)
 	http.ListenAndServe(":8000", nil)
 }
 
@@ -26,6 +28,14 @@ func main() {
 // 	res.Write([]byte(fmt.Sprintf("[%v] %v", req.Method, req.RequestURI)))
 // }
 
-func functions(res http.ResponseWriter, req *http.Request) {
-	res.Write([]byte(fmt.Sprintf("hello [%v] %v", req.Method, req.RequestURI)))
+func function(res http.ResponseWriter, req *http.Request) {
+	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
+}
+
+func metrics(res http.ResponseWriter, req *http.Request) {
+	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
+}
+
+func call(res http.ResponseWriter, req *http.Request) {
+	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
 }
