@@ -2,16 +2,16 @@ package database
 
 import (
     "database/sql"
-    "fmt"
 
     _ "github.com/mattn/go-sqlite3"
 )
 
+var sqliteVersion = "sqlite3"
+var pathDataBase = "./database.db"
+var database, _ = sql.Open(sqliteVersion, pathDataBase)
+
 func CreateSchema(){
-	var sqliteVersion = "sqlite3"
-	var pathDataBase = "./database.db"
-	var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INTEGER PRIMARY KEY, name TEXT, cpus INTEGER, memory INTEGER, code TEXT, package TEXT)"
-	database, _ := sql.Open(sqliteVersion, pathDataBase)
+	var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INTEGER PRIMARY KEY, name TEXT, cpus INTEGER, memory INTEGER, code TEXT, pack TEXT)"
     statement, _ := database.Prepare(qFunctionTable)
 	statement.Exec()
 	
@@ -20,6 +20,19 @@ func CreateSchema(){
 	statement.Exec()
 }
 
-func InsertFunction(){
+func InsertFunction(name string, cpus, memory int, code string, pack string){
+	statement, err := database.Prepare("INSERT INTO function (name, cpus, memory, code, pack) VALUES (?, ?, ?, ?, ?)")
+	checkErr(err)
+	_, err = statement.Exec(name, cpus, memory, code, pack)
+	checkErr(err)
+}
 
+func checkErr(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Close(){
+	database.Close();
 }
