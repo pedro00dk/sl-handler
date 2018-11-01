@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	//"time"
 	"net/http"
 	"./database"
 )
@@ -17,6 +18,19 @@ func main() {
 	// server.ListenAndServe()
 
 	database.CreateSchema()
+	/*
+	fmt.Print(time.Now())
+	for index := 0; index < 100000; index++ {
+		database.InsertFunction("Nome",2, 1024, "Código","Package")
+		if index%1000==0{
+			fmt.Println(index)
+		}
+	}
+	fmt.Print(time.Now())
+	*/
+
+	fmt.Print(database.SelectAllFunction())
+	database.Close();
 
 	http.HandleFunc("/function", function)
 	http.HandleFunc("/metrics", metrics)
