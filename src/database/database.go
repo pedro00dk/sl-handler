@@ -27,6 +27,14 @@ func InsertFunction(name string, cpus, memory int, code string, pack string){
 	checkErr(err)
 }
 
+func DeleteFunction(id int){
+	statement, err := database.Prepare("DELETE FROM function WHERE id=?")
+	checkErr(err)
+
+	_, err = statement.Exec(id)
+	checkErr(err)
+}
+
 func checkErr(err error) {
 	if err != nil {
 		panic(err)
