@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"./database"
 )
 
 func main() {
@@ -14,6 +15,8 @@ func main() {
 	// 	MaxHeaderBytes: 1 << 20,
 	// }
 	// server.ListenAndServe()
+
+	database.CreateSchema()
 
 	http.HandleFunc("/function", function)
 	http.HandleFunc("/metrics", metrics)
