@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -29,6 +30,32 @@ func main() {
 // }
 
 func function(res http.ResponseWriter, req *http.Request) {
+	if req.Method == "GET" {
+		res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
+		return
+	}
+
+	if req.Body == nil {
+		http.Error(res, "Empty body", 400)
+		return
+	}
+
+	var body interface{}
+	err := json.NewDecoder(req.Body).Decode(&body)
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+		return
+	}
+
+	var bodyData = body.(map[string]interface{})
+	fmt.Println(bodyData["action"])
+	fmt.Println(bodyData["name"])
+	fmt.Println(bodyData["code"])
+	fmt.Println(bodyData["package"])
+	var containerOptions = bodyData["container-options"].(map[string]interface{})
+	fmt.Println(containerOptions["cpus"])
+	fmt.Println(containerOptions["memory"])
+
 	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
 }
 
