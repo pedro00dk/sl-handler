@@ -3,7 +3,20 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"os"
+
+	"github.com/orisano/uds"
+)
+
+const (
+	dockerSocketPath = "/var/run/docker.sock"
+)
+
+var (
+	dockerAPIClient = uds.NewClient(dockerSocketPath)
 )
 
 func main() {
@@ -55,6 +68,14 @@ func function(res http.ResponseWriter, req *http.Request) {
 	var containerOptions = bodyData["container-options"].(map[string]interface{})
 	fmt.Println(containerOptions["cpus"])
 	fmt.Println(containerOptions["memory"])
+
+	resp, err := dockerAPIClient.Get("http://unix/images/json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Print(resp.Body)
+	io.Copy(os.Stdout, resp.Body)
+	resp.Body.Close()
 
 	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
 }
