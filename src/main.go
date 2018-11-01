@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -20,5 +21,5 @@ func main() {
 type Handler struct{}
 
 func (h Handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	res.Write([]byte("Hello world!"))
+	res.Write([]byte(fmt.Sprintf("[%v] %v", req.Method, req.RequestURI)))
 }
