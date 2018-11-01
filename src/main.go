@@ -1,7 +1,24 @@
 package main
 
-import "fmt"
+import (
+	"net/http"
+	"time"
+)
 
 func main() {
-	fmt.Println("Hello world!")
+	server := &http.Server{
+		Addr:           ":8000",
+		Handler:        Handler{},
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+	server.ListenAndServe()
+}
+
+// Handler represents the http struct that hold a function to process requests.
+type Handler struct{}
+
+func (h Handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	res.Write([]byte("Hello world!"))
 }
