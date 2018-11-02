@@ -35,7 +35,11 @@ func main() {
 	if isConnected := client.IsConnected(); !isConnected {
 		fmt.Println("Failed to connect")
 	}
-	client.CreateImage("some:function", "", "", "FROM ubuntu")
+	elapsedTime, err := client.CreateImage("some:function", "", "", "FROM ubuntu")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(elapsedTime)
 
 	// http.HandleFunc("/function", function)
 	// http.HandleFunc("/metrics", metrics)
