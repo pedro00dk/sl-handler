@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	//_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -21,6 +22,8 @@ type Function struct {
 }
 
 const (
+	//sqliteVersion = "mysql"
+	//pathDataBase  = "root:password@/app_development"
 	sqliteVersion = "sqlite3"
 	pathDataBase  = "./database.db"
 )
@@ -37,13 +40,28 @@ func (d *Database) Close() {
 }
 
 func (d *Database) createSchema() {
-	var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INTEGER PRIMARY KEY, name TEXT, cpus INTEGER, memory INTEGER, code TEXT, pack TEXT)"
-	statement, _ := d.connection.Prepare(qFunctionTable)
-	statement.Exec()
+	fmt.Println("TESTE")
+	switch sqliteVersion {
+	case "mysql":
+		fmt.Println("MYSQL")
+		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INT(10) NOT NULL AUTO_INCREMENT, name TEXT, cpus INTEGER, memory INTEGER, code TEXT, pack TEXT, PRIMARY KEY (`id`))"
+		statement, _ := d.connection.Prepare(qFunctionTable)
+		statement.Exec()
 
-	var qMetricTable = "CREATE TABLE IF NOT EXISTS metric (id INTEGER PRIMARY KEY, function_id TEXT, duration INTEGER, status_code INTEGER, throttler, concurrentExecutions INTEGER)"
-	statement, _ = d.connection.Prepare(qMetricTable)
-	statement.Exec()
+		var qMetricTable = "CREATE TABLE IF NOT EXISTS metric (id INT(10) NOT NULL AUTO_INCREMENT, function_id TEXT, duration INTEGER, status_code INTEGER, throttler, concurrentExecutions INTEGER, PRIMARY KEY (`id`))"
+		d.connection.Prepare(qMetricTable)
+		statement.Exec()
+
+	case "sqlite3":
+		fmt.Println("SQLITE3")
+		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INTEGER PRIMARY KEY, name TEXT, cpus INTEGER, memory INTEGER, code TEXT, pack TEXT)"
+		statement, _ := d.connection.Prepare(qFunctionTable)
+		statement.Exec()
+
+		var qMetricTable = "CREATE TABLE IF NOT EXISTS metric (id INTEGER PRIMARY KEY, function_id TEXT, duration INTEGER, status_code INTEGER, throttler, concurrentExecutions INTEGER)"
+		statement, _ = d.connection.Prepare(qMetricTable)
+		statement.Exec()
+	}
 }
 
 func (d *Database) InsertFunction(name string, cpus, memory int, code string, pack string) {
