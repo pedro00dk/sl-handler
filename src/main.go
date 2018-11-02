@@ -4,6 +4,7 @@ import (
 	"fmt"
 	//"time"
 	"net/http"
+
 	"./database"
 )
 
@@ -16,21 +17,21 @@ func main() {
 	// 	MaxHeaderBytes: 1 << 20,
 	// }
 	// server.ListenAndServe()
-
-	database.CreateSchema()
+	var database = database.Database{}
+	database.Connect()
 	/*
-	fmt.Print(time.Now())
-	for index := 0; index < 100000; index++ {
-		database.InsertFunction("Nome",2, 1024, "Código","Package")
-		if index%1000==0{
-			fmt.Println(index)
+		fmt.Print(time.Now())
+		for index := 0; index < 100000; index++ {
+			database.InsertFunction("Nome",2, 1024, "Código","Package")
+			if index%1000==0{
+				fmt.Println(index)
+			}
 		}
-	}
-	fmt.Print(time.Now())
+		fmt.Print(time.Now())
 	*/
 
 	fmt.Print(database.SelectAllFunction())
-	database.Close();
+	database.Close()
 
 	http.HandleFunc("/function", function)
 	http.HandleFunc("/metrics", metrics)
