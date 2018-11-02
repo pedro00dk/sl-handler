@@ -20,7 +20,13 @@ var (
 	dockerAPIClient = uds.NewClient(dockerSocketPath)
 )
 
+var database = database.Database{}
+
 func main() {
+	database.Connect()
+
+
+
 	// server := &http.Server{
 	// 	Addr:           ":8000",
 	// 	Handler:        Handler{},
@@ -54,7 +60,29 @@ func main() {
 // 	res.Write([]byte(fmt.Sprintf("[%v] %v", req.Method, req.RequestURI)))
 // }
 
+functionGet(res,req){
+
+}
+
+functionPost(res,req){
+	database.Cre
+}
+
+functionDelete(res,req){
+	
+}
+
 func function(res http.ResponseWriter, req *http.Request) {
+	switch req.Method{
+	case "GET":
+		functionGet(res,req)
+	case "POST":
+		functionPost(res,req)
+	case "DELETE":
+		functionDelete(res,req)
+	}
+
+	/*
 	if req.Method == "GET" {
 		res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
 		return
@@ -90,6 +118,7 @@ func function(res http.ResponseWriter, req *http.Request) {
 	resp.Body.Close()
 
 	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
+	*/
 }
 
 func metrics(res http.ResponseWriter, req *http.Request) {
