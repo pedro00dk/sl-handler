@@ -35,7 +35,10 @@ func main() {
 	if isConnected := client.IsConnected(); !isConnected {
 		fmt.Println("Failed to connect")
 	}
-	elapsedTime, err := client.CreateImage("some:function", "", "", "FROM ubuntu")
+	elapsedTime, err := client.CreateImage(
+		"some:function",
+		docker.FileInfo{Name: "Dockerfile", Text: "FROM ubuntu\n"},
+	)
 	if err != nil {
 		fmt.Println(err)
 	}

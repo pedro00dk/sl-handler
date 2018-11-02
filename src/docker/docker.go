@@ -21,6 +21,12 @@ type Client struct {
 	unixHTTPClient *http.Client
 }
 
+// FileInfo specifies the file name and its content
+type FileInfo struct {
+	Name string
+	Text string
+}
+
 // Init starts a http socket client for the unix domain socket interface
 func (c *Client) Init() {
 	c.unixHTTPClient = uds.NewClient(dockerSocketPath)
@@ -32,24 +38,18 @@ func (c *Client) IsConnected() bool {
 }
 
 // CreateImage creates a docker image with the received files
-func (c *Client) CreateImage(name, code, pack, dockerfile string) (time.Duration, error) {
+func (c *Client) CreateImage(name string, files ...FileInfo) (time.Duration, error) {
 	startTime := time.Now()
 
 	buffer := bytes.Buffer{}
 	tarWriter := tar.NewWriter(&buffer)
 
-	files := []struct{ name, body string }{
-		{"code.js", code},
-		{"package.json", pack},
-		{"Dockerfile", dockerfile},
-	}
-
 	for _, file := range files {
-		tarHeader := &tar.Header{Name: file.name, Mode: 0600, Size: int64(len(file.body))}
+		tarHeader := &tar.Header{Name: file.Name, Mode: 0600, Size: int64(len(file.Text))}
 		if err := tarWriter.WriteHeader(tarHeader); err != nil {
 			return time.Since(startTime), err
 		}
-		if _, err := tarWriter.Write([]byte(file.body)); err != nil {
+		if _, err := tarWriter.Write([]byte(file.Text)); err != nil {
 			return time.Since(startTime), err
 		}
 	}
