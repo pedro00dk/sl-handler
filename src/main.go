@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"./docker"
 	"github.com/orisano/uds"
 )
 
@@ -29,10 +30,17 @@ func main() {
 	// }
 	// server.ListenAndServe()
 
-	http.HandleFunc("/function", function)
-	http.HandleFunc("/metrics", metrics)
-	http.HandleFunc("/call", call)
-	http.ListenAndServe(":8000", nil)
+	client := docker.Client{}
+	client.Init()
+	if isConnected := client.IsConnected(); !isConnected {
+		fmt.Println("Failed to connect")
+	}
+	client.CreateImage("some:function", "", "", "FROM ubuntu")
+
+	// http.HandleFunc("/function", function)
+	// http.HandleFunc("/metrics", metrics)
+	// http.HandleFunc("/call", call)
+	// http.ListenAndServe(":8000", nil)
 }
 
 // Handler represents the http struct that hold a function to process requests.
