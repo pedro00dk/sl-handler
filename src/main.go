@@ -7,22 +7,20 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"./database"
 
 	"./docker"
 	"github.com/orisano/uds"
-)
-
-const (
-	dockerSocketPath = "/var/run/docker.sock"
 )
 
 var (
 	dockerAPIClient = uds.NewClient(dockerSocketPath)
 )
 
-var database = database.Database{}
 
 func main() {
+	var database = database.Database{}
+
 	database.Connect()
 
 
@@ -35,6 +33,19 @@ func main() {
 	// 	MaxHeaderBytes: 1 << 20,
 	// }
 	// server.ListenAndServe()
+	/*
+		fmt.Print(time.Now())
+		for index := 0; index < 100000; index++ {
+			database.InsertFunction("Nome",2, 1024, "Código","Package")
+			if index%1000==0{
+				fmt.Println(index)
+			}
+		}
+		fmt.Print(time.Now())
+	*/
+
+	fmt.Print(database.SelectAllFunction())
+	database.Close()
 
 	client := docker.Client{}
 	client.Init()
@@ -47,7 +58,7 @@ func main() {
 	}
 	fmt.Println(elapsedTime)
 
-	// http.HandleFunc("/function", function)
+	http.HandleFunc("/function", function)
 	// http.HandleFunc("/metrics", metrics)
 	// http.HandleFunc("/call", call)
 	// http.ListenAndServe(":8000", nil)
@@ -60,16 +71,33 @@ func main() {
 // 	res.Write([]byte(fmt.Sprintf("[%v] %v", req.Method, req.RequestURI)))
 // }
 
-functionGet(res,req){
-
+func methodPost(res, req){
+	switch req.RequestURI{
+		case "/function"
+			functionPost(res,req)
+		//case "/metric"
+	}
 }
 
-functionPost(res,req){
-	database.Cre
-}
+func functionPost(res, req){
+	name, code, pack, containerOptions:= ExtractFunction(req.body)
+	if database.SelectFunction(name)!=nil{
+		database.InsertFunction()
+	}
+	http.Error(res, "Function exist", 500)
 
-functionDelete(res,req){
-	
+	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
+}
+func ExtractFunction(jsonBodyReq) (name,code,pack,containerOptions string){
+	var jsonBody interface{}
+	err := json.NewDecoder(jsonBodyReq).Decode(&jsonBody)
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+		return
+	}
+
+	var bodyData = jsonBody.(map[string]interface{})
+	return bodyData["name"].(string), bodyData["code"].(string), bodyData["package"].(string), bodyData["container-options"].(string)
 }
 
 func function(res http.ResponseWriter, req *http.Request) {
