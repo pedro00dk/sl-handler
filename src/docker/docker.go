@@ -39,7 +39,7 @@ func (c *Client) IsConnected() bool {
 	return c.unixHTTPClient != nil
 }
 
-// CreateImage creates a docker image with the received files
+// CreateImage creates a docker image with the received files, returns the time to create
 func (c *Client) CreateImage(name string, files ...FileInfo) time.Duration {
 	startTime := time.Now()
 
@@ -62,8 +62,8 @@ func (c *Client) CreateImage(name string, files ...FileInfo) time.Duration {
 	return time.Since(startTime)
 }
 
-// StartContainer initializes a container with the received image
-func (c *Client) StartContainer(image string, memory int) time.Duration {
+// StartContainer initializes a container with the received image, returns the time to start and the container id
+func (c *Client) StartContainer(image string, memory int) (time.Duration, string) {
 	startTime := time.Now()
 
 	createResponse, _ := c.unixHTTPClient.Post(
@@ -79,14 +79,12 @@ func (c *Client) StartContainer(image string, memory int) time.Duration {
 	fmt.Println(createResponseJSON["Id"])
 	containerID := createResponseJSON["Id"].(string)
 
-	startResponse, err := c.unixHTTPClient.Post(
+	startResponse, _ := c.unixHTTPClient.Post(
 		fmt.Sprintf("http://docker/containers/%v/start", containerID),
 		"application/json",
 		bytes.NewReader([]byte{}),
 	)
-	if err != nil {
-	}
 	io.Copy(os.Stdout, startResponse.Body)
 
-	return time.Since(startTime)
+	return time.Since(startTime), containerID
 }
