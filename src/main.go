@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -60,10 +61,13 @@ func main() {
 func function(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "GET":
-		//methodGet(res, req)
+		fmt.Println("TESTE 1")
+		functionGet(res, req)
 	case "POST":
+		fmt.Println("TESTE 2")
 		functionPost(res, req)
 	case "DELETE":
+		fmt.Println("TESTE 3")
 		functionDelete(res, req)
 	}
 }
@@ -100,6 +104,23 @@ func functionDelete(res http.ResponseWriter, req *http.Request) {
 	} else {
 		http.Error(res, "Function don't exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
+}
+
+func functionGet(res http.ResponseWriter, req *http.Request) {
+	var functions []database.Function
+	if !strings.EqualFold(strings.Split(req.RequestURI, "/")[2], "") {
+		var name = strings.Split(req.RequestURI, "/")[2]
+		fmt.Println("by name")
+		functions = db.SelectFunction(name)
+	} else {
+		functions = db.SelectAllFunction()
+	}
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(functions)
+	fmt.Println(functions)
+	fmt.Println("BUF:")
+	fmt.Println(buf)
+	res.Write(buf.Bytes())
 }
 
 func metrics(res http.ResponseWriter, req *http.Request) {
