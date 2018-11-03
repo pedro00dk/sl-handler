@@ -64,7 +64,7 @@ func (d *Database) createSchema() {
 }
 
 func (d *Database) InsertFunction(name string, memory int, code string, pack string) {
-	statement, err := d.connection.Prepare("INSERT INTO function (name, memory, code, pack) VALUES (?, ?, ?, ?, ?)")
+	statement, err := d.connection.Prepare("INSERT INTO function (name, memory, code, pack) VALUES (?, ?, ?, ?)")
 	checkErr(err)
 	_, err = statement.Exec(name, memory, code, pack)
 	checkErr(err)
@@ -79,7 +79,7 @@ func (d *Database) DeleteFunction(id int) {
 }
 
 func (d *Database) SelectFunction(name string) []Function {
-	rows, err := d.connection.Query("SELECT FROM function WHERE name='" + name + "'")
+	rows, err := d.connection.Query("SELECT * FROM function WHERE name='" + name + "'")
 	checkErr(err)
 	var functionList = make([]Function, 0)
 

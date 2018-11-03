@@ -70,41 +70,12 @@ func main() {
 // 	res.Write([]byte(fmt.Sprintf("[%v] %v", req.Method, req.RequestURI)))
 // }
 
-func methodPost(res http.ResponseWriter, req *http.Request) {
-	switch req.RequestURI {
-	case "/function":
-		functionPost(res, req)
-		//case "/metric"
-	}
-}
-
-func functionPost(res http.ResponseWriter, req *http.Request) {
-	name, memory, code, pack := ExtractFunction(res, req.Body)
-	if db.SelectFunction(name) != nil {
-		db.InsertFunction(name, memory, code, pack)
-	}
-	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
-
-	http.Error(res, "Function exist", 500)
-}
-func ExtractFunction(res http.ResponseWriter, jsonBodyReq io.Reader) (name string, memory int, code, pack string) {
-	var jsonBody interface{}
-	err := json.NewDecoder(jsonBodyReq).Decode(&jsonBody)
-	if err != nil {
-		http.Error(res, err.Error(), 400)
-		return
-	}
-
-	var bodyData = jsonBody.(map[string]interface{})
-	return bodyData["name"].(string), bodyData["memory"].(int), bodyData["code"].(string), bodyData["package"].(string)
-}
-
 func function(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "GET":
 		//methodGet(res, req)
 	case "POST":
-		methodPost(res, req)
+		functionPost(res, req)
 	case "DELETE":
 		//methodDelete(res, req)
 	}
@@ -146,6 +117,32 @@ func function(res http.ResponseWriter, req *http.Request) {
 
 		res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
 	*/
+}
+
+func functionPost(res http.ResponseWriter, req *http.Request) {
+	fmt.Println("FunctionPost")
+	name, memory, code, pack := ExtractFunction(res, req.Body)
+	fmt.Println(len(db.SelectFunction(name)))
+	if len(db.SelectFunction(name)) == 0 {
+		db.InsertFunction(name, memory, code, pack)
+		res.Write([]byte(fmt.Sprintf("Function Created [%v] %v\n", req.Method, req.RequestURI)))
+	} else {
+		//res.Write([]byte("Function already exist"))
+		http.Error(res, "Function already exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+
+}
+
+func ExtractFunction(res http.ResponseWriter, jsonBodyReq io.Reader) (name string, memory int, code, pack string) {
+	var jsonBody interface{}
+	err := json.NewDecoder(jsonBodyReq).Decode(&jsonBody)
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+		return
+	}
+
+	var bodyData = jsonBody.(map[string]interface{})
+	return bodyData["name"].(string), int(bodyData["memory"].(float64)), bodyData["code"].(string), bodyData["package"].(string)
 }
 
 func metrics(res http.ResponseWriter, req *http.Request) {
