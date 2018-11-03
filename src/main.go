@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"./docker"
 	"github.com/orisano/uds"
@@ -48,7 +49,11 @@ func main() {
 	)
 	fmt.Println(elapsedTime)
 
-	client.StartContainer("some3:function", 0)
+	containerID, t := client.StartContainer("some3:function", 0)
+	fmt.Println(t)
+
+	time.Sleep(5 * time.Second)
+	fmt.Println(client.StopContainer(containerID))
 
 	// http.HandleFunc("/function", function)
 	// http.HandleFunc("/metrics", metrics)

@@ -63,7 +63,7 @@ func (c *Client) CreateImage(name string, files ...FileInfo) time.Duration {
 }
 
 // StartContainer initializes a container with the received image, returns the time to start and the container id
-func (c *Client) StartContainer(image string, memory int) (time.Duration, string) {
+func (c *Client) StartContainer(image string, memory int) (string, time.Duration) {
 	startTime := time.Now()
 
 	createResponse, _ := c.unixHTTPClient.Post(
@@ -82,9 +82,31 @@ func (c *Client) StartContainer(image string, memory int) (time.Duration, string
 	startResponse, _ := c.unixHTTPClient.Post(
 		fmt.Sprintf("http://docker/containers/%v/start", containerID),
 		"application/json",
-		bytes.NewReader([]byte{}),
+		nil,
 	)
 	io.Copy(os.Stdout, startResponse.Body)
 
-	return time.Since(startTime), containerID
+	return containerID, time.Since(startTime)
+}
+
+// StopContainer stops the container with the received container Id, returns the time to stop
+func (c *Client) StopContainer(containerID string) time.Duration {
+	startTime := time.Now()
+
+	stopResponse, _ := c.unixHTTPClient.Post(
+		fmt.Sprintf("http://docker/containers/%v/kill", containerID),
+		"application/json",
+		nil,
+	)
+	io.Copy(os.Stdout, stopResponse.Body)
+
+	deleteRequest, _ := http.NewRequest(
+		"DELETE",
+		fmt.Sprintf("http://docker/containers/%v", containerID),
+		nil,
+	)
+	deleteResponse, _ := c.unixHTTPClient.Do(deleteRequest)
+	io.Copy(os.Stdout, deleteResponse.Body)
+
+	return time.Since(startTime)
 }
