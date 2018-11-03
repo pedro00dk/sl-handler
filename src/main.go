@@ -4,26 +4,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
-	"os"
+
 	"./database"
 
 	"./docker"
 	"github.com/orisano/uds"
 )
 
-var (
-	dockerAPIClient = uds.NewClient(dockerSocketPath)
+const (
+	dockerSocketPath = "/var/run/docker.sock"
 )
 
+var (
+	dockerAPIClient = uds.NewClient(dockerSocketPath)
+	db              = database.Database{}
+)
 
 func main() {
-	var database = database.Database{}
 
-	database.Connect()
-
-
+	db.Connect()
 
 	// server := &http.Server{
 	// 	Addr:           ":8000",
@@ -44,8 +44,8 @@ func main() {
 		fmt.Print(time.Now())
 	*/
 
-	fmt.Print(database.SelectAllFunction())
-	database.Close()
+	fmt.Print(db.SelectAllFunction())
+	db.Close()
 
 	client := docker.Client{}
 	client.Init()
@@ -71,24 +71,24 @@ func main() {
 // 	res.Write([]byte(fmt.Sprintf("[%v] %v", req.Method, req.RequestURI)))
 // }
 
-func methodPost(res, req){
-	switch req.RequestURI{
-		case "/function"
-			functionPost(res,req)
+func methodPost(res http.ResponseWriter, req *http.Request) {
+	switch req.RequestURI {
+	case "/function":
+		functionPost(res, req)
 		//case "/metric"
 	}
 }
 
-func functionPost(res, req){
-	name, code, pack, containerOptions:= ExtractFunction(req.body)
-	if database.SelectFunction(name)!=nil{
-		database.InsertFunction()
+func functionPost(res http.ResponseWriter, req *http.Request) {
+	name, code, pack, containerOptions := ExtractFunction(res, req.Body)
+	if db.SelectFunction(name) != nil {
+		db.InsertFunction(name, code, pack, containerOptions)
 	}
-	http.Error(res, "Function exist", 500)
-
 	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
+
+	http.Error(res, "Function exist", 500)
 }
-func ExtractFunction(jsonBodyReq) (name,code,pack,containerOptions string){
+func ExtractFunction(res http.ResponseWriter, jsonBodyReq io.Reader) (name, code, pack, containerOptions string) {
 	var jsonBody interface{}
 	err := json.NewDecoder(jsonBodyReq).Decode(&jsonBody)
 	if err != nil {
@@ -101,51 +101,51 @@ func ExtractFunction(jsonBodyReq) (name,code,pack,containerOptions string){
 }
 
 func function(res http.ResponseWriter, req *http.Request) {
-	switch req.Method{
+	switch req.Method {
 	case "GET":
-		functionGet(res,req)
+		//methodGet(res, req)
 	case "POST":
-		functionPost(res,req)
+		methodPost(res, req)
 	case "DELETE":
-		functionDelete(res,req)
+		//methodDelete(res, req)
 	}
 
 	/*
-	if req.Method == "GET" {
+		if req.Method == "GET" {
+			res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
+			return
+		}
+
+		if req.Body == nil {
+			http.Error(res, "Empty body", 400)
+			return
+		}
+
+		var body interface{}
+		err := json.NewDecoder(req.Body).Decode(&body)
+		if err != nil {
+			http.Error(res, err.Error(), 400)
+			return
+		}
+
+		var bodyData = body.(map[string]interface{})
+		fmt.Println(bodyData["action"])
+		fmt.Println(bodyData["name"])
+		fmt.Println(bodyData["code"])
+		fmt.Println(bodyData["package"])
+		var containerOptions = bodyData["container-options"].(map[string]interface{})
+		fmt.Println(containerOptions["cpus"])
+		fmt.Println(containerOptions["memory"])
+
+		resp, err := dockerAPIClient.Get("http://unix/images/json")
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Print(resp.Body)
+		io.Copy(os.Stdout, resp.Body)
+		resp.Body.Close()
+
 		res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
-		return
-	}
-
-	if req.Body == nil {
-		http.Error(res, "Empty body", 400)
-		return
-	}
-
-	var body interface{}
-	err := json.NewDecoder(req.Body).Decode(&body)
-	if err != nil {
-		http.Error(res, err.Error(), 400)
-		return
-	}
-
-	var bodyData = body.(map[string]interface{})
-	fmt.Println(bodyData["action"])
-	fmt.Println(bodyData["name"])
-	fmt.Println(bodyData["code"])
-	fmt.Println(bodyData["package"])
-	var containerOptions = bodyData["container-options"].(map[string]interface{})
-	fmt.Println(containerOptions["cpus"])
-	fmt.Println(containerOptions["memory"])
-
-	resp, err := dockerAPIClient.Get("http://unix/images/json")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Print(resp.Body)
-	io.Copy(os.Stdout, resp.Body)
-	resp.Body.Close()
-
-	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
 	*/
 }
 
