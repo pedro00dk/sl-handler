@@ -85,7 +85,7 @@ func (d *Database) SelectFunction(name string) []Function {
 
 	for rows.Next() {
 		function := Function{}
-		err = rows.Scan(&function.id, &function.name, &function.memory, &function.code, &function.pack)
+		err = rows.Scan(&function.Id, &function.Name, &function.Memory, &function.Code, &function.Pack)
 		checkErr(err)
 		functionList = append(functionList, function)
 	}
@@ -100,7 +100,7 @@ func (d *Database) SelectAllFunction() []Function {
 
 	for rows.Next() {
 		function := Function{}
-		err = rows.Scan(&function.id, &function.name, &function.memory, &function.code, &function.pack)
+		err = rows.Scan(&function.Id, &function.Name, &function.Memory, &function.Code, &function.Pack)
 		checkErr(err)
 		functionList = append(functionList, function)
 	}
@@ -115,7 +115,7 @@ func (d *Database) SelectByNameFunction(name string) []Function {
 
 	for rows.Next() {
 		function := Function{}
-		err = rows.Scan(&function.id, &function.name, &function.memory, &function.code, &function.pack)
+		err = rows.Scan(&function.Id, &function.Name, &function.Memory, &function.Code, &function.Pack)
 		checkErr(err)
 		functionList = append(functionList, function)
 	}

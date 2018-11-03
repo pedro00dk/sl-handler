@@ -79,15 +79,15 @@ func methodPost(res http.ResponseWriter, req *http.Request) {
 }
 
 func functionPost(res http.ResponseWriter, req *http.Request) {
-	name, code, pack, containerOptions := ExtractFunction(res, req.Body)
+	name, memory, code, pack := ExtractFunction(res, req.Body)
 	if db.SelectFunction(name) != nil {
-		db.InsertFunction(name, 512, code, pack)
+		db.InsertFunction(name, memory, code, pack)
 	}
 	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
 
 	http.Error(res, "Function exist", 500)
 }
-func ExtractFunction(res http.ResponseWriter, jsonBodyReq io.Reader) (name, code, pack, containerOptions string) {
+func ExtractFunction(res http.ResponseWriter, jsonBodyReq io.Reader) (name string, memory int, code, pack string) {
 	var jsonBody interface{}
 	err := json.NewDecoder(jsonBodyReq).Decode(&jsonBody)
 	if err != nil {
@@ -96,7 +96,7 @@ func ExtractFunction(res http.ResponseWriter, jsonBodyReq io.Reader) (name, code
 	}
 
 	var bodyData = jsonBody.(map[string]interface{})
-	return bodyData["name"].(string), bodyData["code"].(string), bodyData["package"].(string), bodyData["container-options"].(string)
+	return bodyData["name"].(string), bodyData["memory"].(int), bodyData["code"].(string), bodyData["package"].(string)
 }
 
 func function(res http.ResponseWriter, req *http.Request) {
