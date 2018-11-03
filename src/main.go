@@ -61,20 +61,16 @@ func main() {
 func function(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "GET":
-		fmt.Println("TESTE 1")
 		functionGet(res, req)
 	case "POST":
-		fmt.Println("TESTE 2")
 		functionPost(res, req)
 	case "DELETE":
-		fmt.Println("TESTE 3")
 		functionDelete(res, req)
 	}
 }
 
 func functionPost(res http.ResponseWriter, req *http.Request) {
 	name, memory, code, pack := ExtractFunction(res, req.Body)
-	fmt.Println(len(db.SelectFunction(name)))
 	if len(db.SelectFunction(name)) == 0 {
 		db.InsertFunction(name, memory, code, pack)
 		res.Write([]byte(fmt.Sprintf("Function Created [%v] %v\n", req.Method, req.RequestURI)))
@@ -110,16 +106,12 @@ func functionGet(res http.ResponseWriter, req *http.Request) {
 	var functions []database.Function
 	if !strings.EqualFold(strings.Split(req.RequestURI, "/")[2], "") {
 		var name = strings.Split(req.RequestURI, "/")[2]
-		fmt.Println("by name")
 		functions = db.SelectFunction(name)
 	} else {
 		functions = db.SelectAllFunction()
 	}
 	var buf bytes.Buffer
 	json.NewEncoder(&buf).Encode(functions)
-	fmt.Println(functions)
-	fmt.Println("BUF:")
-	fmt.Println(buf)
 	res.Write(buf.Bytes())
 }
 
