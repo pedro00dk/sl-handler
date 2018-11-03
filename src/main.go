@@ -15,11 +15,14 @@ import (
 )
 
 var (
-	db = database.Database{}
+	db            = database.Database{}
+	dockerClient  = docker.Client{}
+	dockerfile, _ = ioutil.ReadFile("../dockerfiles/node/Dockerfile")
 )
 
 func main() {
 	db.Connect()
+	dockerClient.Init()
 
 	http.HandleFunc("/function/", function)
 	http.HandleFunc("/metrics", metrics)
@@ -43,6 +46,12 @@ func function(res http.ResponseWriter, req *http.Request) {
 func functionPost(res http.ResponseWriter, req *http.Request) {
 	name, memory, code, pack := ExtractFunction(res, req.Body)
 	if len(db.SelectFunction(name)) == 0 {
+		dockerClient.CreateImage(
+			name,
+			docker.FileInfo{Name: "package.json", Text: pack},
+			docker.FileInfo{Name: "code.js", Text: code},
+			docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
+		)
 		db.InsertFunction(name, memory, code, pack)
 		res.Write([]byte(fmt.Sprintf("Function Created [%v] %v\n", req.Method, req.RequestURI)))
 	} else {
@@ -66,6 +75,7 @@ func functionDelete(res http.ResponseWriter, req *http.Request) {
 	var name = strings.Split(req.RequestURI, "/")[2]
 
 	if len(db.SelectFunction(name)) > 0 {
+		dockerClient.DeleteImage(name)
 		db.DeleteFunction(name)
 		res.Write([]byte(fmt.Sprintf("Function Deleted [%v] %v\n", req.Method, req.RequestURI)))
 	} else {
