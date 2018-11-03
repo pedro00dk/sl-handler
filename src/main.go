@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -35,14 +36,19 @@ func main() {
 	if isConnected := client.IsConnected(); !isConnected {
 		fmt.Println("Failed to connect")
 	}
-	elapsedTime, err := client.CreateImage(
-		"some:function",
-		docker.FileInfo{Name: "Dockerfile", Text: "FROM ubuntu\n"},
+
+	dockerfile, _ := ioutil.ReadFile("./dockerfiles/node/Dockerfile")
+	serverJs, _ := ioutil.ReadFile("./dockerfiles/node/server.js")
+	codeJs, _ := ioutil.ReadFile("./dockerfiles/node/code.js")
+	elapsedTime := client.CreateImage(
+		"some3:function",
+		docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
+		docker.FileInfo{Name: "server.js", Text: string(serverJs)},
+		docker.FileInfo{Name: "code.js", Text: string(codeJs)},
 	)
-	if err != nil {
-		fmt.Println(err)
-	}
 	fmt.Println(elapsedTime)
+
+	client.StartContainer("some3:function", 0)
 
 	// http.HandleFunc("/function", function)
 	// http.HandleFunc("/metrics", metrics)

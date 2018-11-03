@@ -3,8 +3,10 @@ package docker
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -38,31 +40,53 @@ func (c *Client) IsConnected() bool {
 }
 
 // CreateImage creates a docker image with the received files
-func (c *Client) CreateImage(name string, files ...FileInfo) (time.Duration, error) {
+func (c *Client) CreateImage(name string, files ...FileInfo) time.Duration {
 	startTime := time.Now()
 
-	buffer := bytes.Buffer{}
-	tarWriter := tar.NewWriter(&buffer)
-
+	tarBuffer := bytes.Buffer{}
+	tarWriter := tar.NewWriter(&tarBuffer)
 	for _, file := range files {
 		tarHeader := &tar.Header{Name: file.Name, Mode: 0600, Size: int64(len(file.Text))}
-		if err := tarWriter.WriteHeader(tarHeader); err != nil {
-			return time.Since(startTime), err
-		}
-		if _, err := tarWriter.Write([]byte(file.Text)); err != nil {
-			return time.Since(startTime), err
-		}
+		tarWriter.WriteHeader(tarHeader)
+		tarWriter.Write([]byte(file.Text))
 	}
-
-	if err := tarWriter.Close(); err != nil {
-		return time.Since(startTime), err
-	}
-
 	tarWriter.Close()
-	response, err := c.unixHTTPClient.Post(fmt.Sprintf("http://docker/build?t=%v", name), "application/x-tar", &buffer)
-	if err != nil {
-		return time.Since(startTime), err
-	}
+
+	response, _ := c.unixHTTPClient.Post(
+		fmt.Sprintf("http://docker/build?t=%v", name),
+		"application/x-tar",
+		&tarBuffer,
+	)
 	io.Copy(os.Stdout, response.Body)
-	return time.Since(startTime), err
+
+	return time.Since(startTime)
+}
+
+// StartContainer initializes a container with the received image
+func (c *Client) StartContainer(image string, memory int) time.Duration {
+	startTime := time.Now()
+
+	createResponse, _ := c.unixHTTPClient.Post(
+		"http://docker/containers/create",
+		"application/json",
+		bytes.NewReader([]byte(fmt.Sprintf(`{ "Image": "%v" }`, image))),
+	)
+	createResponseBody, _ := ioutil.ReadAll(createResponse.Body)
+	fmt.Println(string(createResponseBody))
+
+	var createResponseJSON map[string]interface{}
+	json.Unmarshal(createResponseBody, &createResponseJSON)
+	fmt.Println(createResponseJSON["Id"])
+	containerID := createResponseJSON["Id"].(string)
+
+	startResponse, err := c.unixHTTPClient.Post(
+		fmt.Sprintf("http://docker/containers/%v/start", containerID),
+		"application/json",
+		bytes.NewReader([]byte{}),
+	)
+	if err != nil {
+	}
+	io.Copy(os.Stdout, startResponse.Body)
+
+	return time.Since(startTime)
 }
