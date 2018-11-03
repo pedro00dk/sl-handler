@@ -38,23 +38,27 @@ func main() {
 		fmt.Println("Failed to connect")
 	}
 
-	dockerfile, _ := ioutil.ReadFile("./dockerfiles/node/Dockerfile")
-	serverJs, _ := ioutil.ReadFile("./dockerfiles/node/server.js")
-	codeJs, _ := ioutil.ReadFile("./dockerfiles/node/code.js")
+	imageName := "some:function"
+	dockerfile, _ := ioutil.ReadFile("../dockerfiles/node/Dockerfile")
+	serverJs, _ := ioutil.ReadFile("../dockerfiles/node/server.js")
+	codeJs, _ := ioutil.ReadFile("../dockerfiles/node/code.js")
 	createImageTime := client.CreateImage(
-		"some:function",
+		imageName,
 		docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
 		docker.FileInfo{Name: "server.js", Text: string(serverJs)},
 		docker.FileInfo{Name: "code.js", Text: string(codeJs)},
 	)
 	fmt.Println(createImageTime)
-
-	containerID, createContainerTime := client.CreateContainer("some:function")
+	containerID, createContainerTime := client.CreateContainer(imageName)
 	fmt.Println(createContainerTime)
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 	fmt.Println(client.StartContainer(containerID))
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 	fmt.Println(client.StopContainer(containerID))
+	time.Sleep(2 * time.Second)
+	fmt.Println(client.DeleteContainer(containerID))
+	time.Sleep(2 * time.Second)
+	fmt.Println(client.DeleteImage(imageName))
 
 	// http.HandleFunc("/function", function)
 	// http.HandleFunc("/metrics", metrics)

@@ -75,10 +75,7 @@ func (c *Client) CreateContainer(image string) (string, time.Duration) {
 	// var json map[string]interface{}
 	// json.Unmarshal(createResponseBody, &createResponseJSON)
 	// containerID := createResponseJSON["Id"].(string)
-
 	containerID := string(body[7:71])
-	fmt.Println(body)
-	fmt.Println(string(containerID))
 
 	return containerID, time.Since(startTime)
 }
@@ -111,13 +108,28 @@ func (c *Client) StopContainer(containerID string) time.Duration {
 	return time.Since(startTime)
 }
 
-// DeleteContainer deletes the container with the received container Id, returns the time to stop
+// DeleteContainer deletes the container with the received container Id, returns the time to delete
 func (c *Client) DeleteContainer(containerID string) time.Duration {
 	startTime := time.Now()
 
 	request, _ := http.NewRequest(
 		"DELETE",
 		fmt.Sprintf("http://docker/containers/%v", containerID),
+		nil,
+	)
+	response, _ := c.unixHTTPClient.Do(request)
+	response.Body.Close()
+
+	return time.Since(startTime)
+}
+
+// DeleteImage deletes the image with the received name, returns the time to delete
+func (c *Client) DeleteImage(name string) time.Duration {
+	startTime := time.Now()
+
+	request, _ := http.NewRequest(
+		"DELETE",
+		fmt.Sprintf("http://docker/images/%v", name),
 		nil,
 	)
 	response, _ := c.unixHTTPClient.Do(request)
