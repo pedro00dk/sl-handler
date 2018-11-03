@@ -13,11 +13,11 @@ type Database struct {
 }
 
 type Function struct {
-	id     int
-	name   string
-	memory int
-	code   string
-	pack   string
+	Id     int
+	Name   string
+	Memory int
+	Code   string
+	Pack   string
 }
 
 const (

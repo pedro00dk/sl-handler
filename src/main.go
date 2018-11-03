@@ -8,7 +8,6 @@ import (
 
 	"./database"
 
-	"./docker"
 	"github.com/orisano/uds"
 )
 
@@ -45,23 +44,23 @@ func main() {
 	*/
 
 	fmt.Print(db.SelectAllFunction())
-	db.Close()
-
-	client := docker.Client{}
-	client.Init()
-	if isConnected := client.IsConnected(); !isConnected {
-		fmt.Println("Failed to connect")
-	}
-	elapsedTime, err := client.CreateImage("some:function", "", "", "FROM ubuntu")
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(elapsedTime)
-
+	//db.Close()
+	/*
+		client := docker.Client{}
+		client.Init()
+		if isConnected := client.IsConnected(); !isConnected {
+			fmt.Println("Failed to connect")
+		}
+		elapsedTime, err := client.CreateImage("some:function", "", "", "FROM ubuntu")
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(elapsedTime)
+	*/
 	http.HandleFunc("/function", function)
-	// http.HandleFunc("/metrics", metrics)
-	// http.HandleFunc("/call", call)
-	// http.ListenAndServe(":8000", nil)
+	http.HandleFunc("/metrics", metrics)
+	http.HandleFunc("/call", call)
+	http.ListenAndServe(":8000", nil)
 }
 
 // Handler represents the http struct that hold a function to process requests.
@@ -82,7 +81,7 @@ func methodPost(res http.ResponseWriter, req *http.Request) {
 func functionPost(res http.ResponseWriter, req *http.Request) {
 	name, code, pack, containerOptions := ExtractFunction(res, req.Body)
 	if db.SelectFunction(name) != nil {
-		db.InsertFunction(name, code, pack, containerOptions)
+		db.InsertFunction(name, 512, code, pack)
 	}
 	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
 
