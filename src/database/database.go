@@ -15,7 +15,6 @@ type Database struct {
 type Function struct {
 	id     int
 	name   string
-	cpus   int
 	memory int
 	code   string
 	pack   string
@@ -44,7 +43,7 @@ func (d *Database) createSchema() {
 	switch sqliteVersion {
 	case "mysql":
 		fmt.Println("MYSQL")
-		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INT(10) NOT NULL AUTO_INCREMENT, name TEXT, cpus INTEGER, memory INTEGER, code TEXT, pack TEXT, PRIMARY KEY (`id`))"
+		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INT(10) NOT NULL AUTO_INCREMENT, name TEXT, memory INTEGER, code TEXT, pack TEXT, PRIMARY KEY (`id`))"
 		statement, _ := d.connection.Prepare(qFunctionTable)
 		statement.Exec()
 
@@ -54,7 +53,7 @@ func (d *Database) createSchema() {
 
 	case "sqlite3":
 		fmt.Println("SQLITE3")
-		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INTEGER PRIMARY KEY, name TEXT, cpus INTEGER, memory INTEGER, code TEXT, pack TEXT)"
+		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INTEGER PRIMARY KEY, name TEXT, memory INTEGER, code TEXT, pack TEXT)"
 		statement, _ := d.connection.Prepare(qFunctionTable)
 		statement.Exec()
 
@@ -64,10 +63,10 @@ func (d *Database) createSchema() {
 	}
 }
 
-func (d *Database) InsertFunction(name string, cpus, memory int, code string, pack string) {
-	statement, err := d.connection.Prepare("INSERT INTO function (name, cpus, memory, code, pack) VALUES (?, ?, ?, ?, ?)")
+func (d *Database) InsertFunction(name string, memory int, code string, pack string) {
+	statement, err := d.connection.Prepare("INSERT INTO function (name, memory, code, pack) VALUES (?, ?, ?, ?, ?)")
 	checkErr(err)
-	_, err = statement.Exec(name, cpus, memory, code, pack)
+	_, err = statement.Exec(name, memory, code, pack)
 	checkErr(err)
 }
 
@@ -86,7 +85,7 @@ func (d *Database) SelectFunction(name string) []Function {
 
 	for rows.Next() {
 		function := Function{}
-		err = rows.Scan(&function.id, &function.name, &function.cpus, &function.memory, &function.code, &function.pack)
+		err = rows.Scan(&function.id, &function.name, &function.memory, &function.code, &function.pack)
 		checkErr(err)
 		functionList = append(functionList, function)
 	}
@@ -101,7 +100,7 @@ func (d *Database) SelectAllFunction() []Function {
 
 	for rows.Next() {
 		function := Function{}
-		err = rows.Scan(&function.id, &function.name, &function.cpus, &function.memory, &function.code, &function.pack)
+		err = rows.Scan(&function.id, &function.name, &function.memory, &function.code, &function.pack)
 		checkErr(err)
 		functionList = append(functionList, function)
 	}
@@ -116,7 +115,7 @@ func (d *Database) SelectByNameFunction(name string) []Function {
 
 	for rows.Next() {
 		function := Function{}
-		err = rows.Scan(&function.id, &function.name, &function.cpus, &function.memory, &function.code, &function.pack)
+		err = rows.Scan(&function.id, &function.name, &function.memory, &function.code, &function.pack)
 		checkErr(err)
 		functionList = append(functionList, function)
 	}
