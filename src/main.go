@@ -4,25 +4,52 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	"./database"
-
-	"github.com/orisano/uds"
-)
-
-const (
-	dockerSocketPath = "/var/run/docker.sock"
+	"./docker"
 )
 
 var (
-	dockerAPIClient = uds.NewClient(dockerSocketPath)
-	db              = database.Database{}
+	db = database.Database{}
 )
+
+func testDockerClient() {
+	client := docker.Client{}
+	client.Init()
+	if isConnected := client.IsConnected(); !isConnected {
+		fmt.Println("Failed to connect")
+	}
+
+	imageName := "function:function"
+	dockerfile, _ := ioutil.ReadFile("./dockerfiles/node/Dockerfile")
+	serverJs, _ := ioutil.ReadFile("./dockerfiles/node/server.js")
+	codeJs, _ := ioutil.ReadFile("./dockerfiles/node/code.js")
+	createImageTime := client.CreateImage(
+		imageName,
+		docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
+		docker.FileInfo{Name: "server.js", Text: string(serverJs)},
+		docker.FileInfo{Name: "code.js", Text: string(codeJs)},
+	)
+	fmt.Println(createImageTime)
+	containerID, createContainerTime := client.CreateContainer(imageName)
+	fmt.Println(createContainerTime)
+	time.Sleep(1 * time.Second)
+	fmt.Println(client.StartContainer(containerID))
+	time.Sleep(1 * time.Second)
+	fmt.Println(client.StopContainer(containerID))
+	time.Sleep(1 * time.Second)
+	fmt.Println(client.DeleteContainer(containerID))
+	time.Sleep(1 * time.Second)
+	fmt.Println(client.DeleteImage(imageName))
+}
 
 func main() {
 	db.Connect()
+	//testDockerClient()
 
 	http.HandleFunc("/function/", function)
 	http.HandleFunc("/metrics", metrics)
