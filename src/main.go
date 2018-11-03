@@ -41,17 +41,18 @@ func main() {
 	dockerfile, _ := ioutil.ReadFile("./dockerfiles/node/Dockerfile")
 	serverJs, _ := ioutil.ReadFile("./dockerfiles/node/server.js")
 	codeJs, _ := ioutil.ReadFile("./dockerfiles/node/code.js")
-	elapsedTime := client.CreateImage(
-		"some3:function",
+	createImageTime := client.CreateImage(
+		"some:function",
 		docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
 		docker.FileInfo{Name: "server.js", Text: string(serverJs)},
 		docker.FileInfo{Name: "code.js", Text: string(codeJs)},
 	)
-	fmt.Println(elapsedTime)
+	fmt.Println(createImageTime)
 
-	containerID, t := client.StartContainer("some3:function", 0)
-	fmt.Println(t)
-
+	containerID, createContainerTime := client.CreateContainer("some:function")
+	fmt.Println(createContainerTime)
+	time.Sleep(5 * time.Second)
+	fmt.Println(client.StartContainer(containerID))
 	time.Sleep(5 * time.Second)
 	fmt.Println(client.StopContainer(containerID))
 

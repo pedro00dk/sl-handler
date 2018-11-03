@@ -3,12 +3,9 @@ package docker
 import (
 	"archive/tar"
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/orisano/uds"
@@ -57,56 +54,74 @@ func (c *Client) CreateImage(name string, files ...FileInfo) time.Duration {
 		"application/x-tar",
 		&tarBuffer,
 	)
-	io.Copy(os.Stdout, response.Body)
+	response.Body.Close()
 
 	return time.Since(startTime)
 }
 
-// StartContainer initializes a container with the received image, returns the time to start and the container id
-func (c *Client) StartContainer(image string, memory int) (string, time.Duration) {
+// CreateContainer initializes a container with the received image, returns the time to create and the container id
+func (c *Client) CreateContainer(image string) (string, time.Duration) {
 	startTime := time.Now()
 
-	createResponse, _ := c.unixHTTPClient.Post(
+	response, _ := c.unixHTTPClient.Post(
 		"http://docker/containers/create",
 		"application/json",
 		bytes.NewReader([]byte(fmt.Sprintf(`{ "Image": "%v" }`, image))),
 	)
-	createResponseBody, _ := ioutil.ReadAll(createResponse.Body)
-	fmt.Println(string(createResponseBody))
+	body, _ := ioutil.ReadAll(response.Body)
+	response.Body.Close()
 
-	var createResponseJSON map[string]interface{}
-	json.Unmarshal(createResponseBody, &createResponseJSON)
-	fmt.Println(createResponseJSON["Id"])
-	containerID := createResponseJSON["Id"].(string)
+	// simple json result (json parsing is expensive -> use simple string manipulation)
+	// var json map[string]interface{}
+	// json.Unmarshal(createResponseBody, &createResponseJSON)
+	// containerID := createResponseJSON["Id"].(string)
 
-	startResponse, _ := c.unixHTTPClient.Post(
+	containerID := string(body[7:71])
+	fmt.Println(body)
+	fmt.Println(string(containerID))
+
+	return containerID, time.Since(startTime)
+}
+
+// StartContainer starts the container with the received containerID, returns the time to start the container
+func (c *Client) StartContainer(containerID string) time.Duration {
+	startTime := time.Now()
+
+	response, _ := c.unixHTTPClient.Post(
 		fmt.Sprintf("http://docker/containers/%v/start", containerID),
 		"application/json",
 		nil,
 	)
-	io.Copy(os.Stdout, startResponse.Body)
+	response.Body.Close()
 
-	return containerID, time.Since(startTime)
+	return time.Since(startTime)
 }
 
 // StopContainer stops the container with the received container Id, returns the time to stop
 func (c *Client) StopContainer(containerID string) time.Duration {
 	startTime := time.Now()
 
-	stopResponse, _ := c.unixHTTPClient.Post(
+	response, _ := c.unixHTTPClient.Post(
 		fmt.Sprintf("http://docker/containers/%v/kill", containerID),
 		"application/json",
 		nil,
 	)
-	io.Copy(os.Stdout, stopResponse.Body)
+	response.Body.Close()
 
-	deleteRequest, _ := http.NewRequest(
+	return time.Since(startTime)
+}
+
+// DeleteContainer deletes the container with the received container Id, returns the time to stop
+func (c *Client) DeleteContainer(containerID string) time.Duration {
+	startTime := time.Now()
+
+	request, _ := http.NewRequest(
 		"DELETE",
 		fmt.Sprintf("http://docker/containers/%v", containerID),
 		nil,
 	)
-	deleteResponse, _ := c.unixHTTPClient.Do(deleteRequest)
-	io.Copy(os.Stdout, deleteResponse.Body)
+	response, _ := c.unixHTTPClient.Do(request)
+	response.Body.Close()
 
 	return time.Since(startTime)
 }
