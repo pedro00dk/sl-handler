@@ -3,6 +3,7 @@ package docker
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -84,7 +85,7 @@ func (c *Client) CreateContainer(image string) (string, time.Duration) {
 }
 
 // StartContainer starts the container with the received containerID, returns the time to start the container
-func (c *Client) StartContainer(containerID string) time.Duration {
+func (c *Client) StartContainer(containerID string) (string, time.Duration) {
 	startTime := time.Now()
 
 	response, _ := c.unixHTTPClient.Post(
@@ -95,7 +96,14 @@ func (c *Client) StartContainer(containerID string) time.Duration {
 	io.Copy(os.Stdout, response.Body)
 	response.Body.Close()
 
-	return time.Since(startTime)
+	inspectResponse, _ := c.unixHTTPClient.Get(
+		fmt.Sprintf("http://docker/containers/%v/json", containerID),
+	)
+	var inspectJSON map[string]interface{}
+	json.NewDecoder(inspectResponse.Body).Decode(&inspectJSON)
+	containerIP := inspectJSON["NetworkSettings"].(map[string]interface{})["Networks"].(map[string]interface{})["bridge"].(map[string]interface{})["IPAddress"].(string)
+
+	return containerIP, time.Since(startTime)
 }
 
 // StopContainer stops the container with the received container Id, returns the time to stop
