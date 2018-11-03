@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"./database"
 
@@ -57,7 +58,7 @@ func main() {
 		}
 		fmt.Println(elapsedTime)
 	*/
-	http.HandleFunc("/function", function)
+	http.HandleFunc("/function/", function)
 	http.HandleFunc("/metrics", metrics)
 	http.HandleFunc("/call", call)
 	http.ListenAndServe(":8000", nil)
@@ -71,13 +72,14 @@ func main() {
 // }
 
 func function(res http.ResponseWriter, req *http.Request) {
+	fmt.Println("teste")
 	switch req.Method {
 	case "GET":
 		//methodGet(res, req)
 	case "POST":
 		functionPost(res, req)
 	case "DELETE":
-		//methodDelete(res, req)
+		functionDelete(res, req)
 	}
 
 	/*
@@ -120,7 +122,6 @@ func function(res http.ResponseWriter, req *http.Request) {
 }
 
 func functionPost(res http.ResponseWriter, req *http.Request) {
-	fmt.Println("FunctionPost")
 	name, memory, code, pack := ExtractFunction(res, req.Body)
 	fmt.Println(len(db.SelectFunction(name)))
 	if len(db.SelectFunction(name)) == 0 {
@@ -130,7 +131,6 @@ func functionPost(res http.ResponseWriter, req *http.Request) {
 		//res.Write([]byte("Function already exist"))
 		http.Error(res, "Function already exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
-
 }
 
 func ExtractFunction(res http.ResponseWriter, jsonBodyReq io.Reader) (name string, memory int, code, pack string) {
@@ -143,6 +143,17 @@ func ExtractFunction(res http.ResponseWriter, jsonBodyReq io.Reader) (name strin
 
 	var bodyData = jsonBody.(map[string]interface{})
 	return bodyData["name"].(string), int(bodyData["memory"].(float64)), bodyData["code"].(string), bodyData["package"].(string)
+}
+
+func functionDelete(res http.ResponseWriter, req *http.Request) {
+	var name = strings.Split(req.RequestURI, "/")[2]
+
+	if len(db.SelectFunction(name)) > 0 {
+		db.DeleteFunction(name)
+		res.Write([]byte(fmt.Sprintf("Function Deleted [%v] %v\n", req.Method, req.RequestURI)))
+	} else {
+		http.Error(res, "Function don't exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
 }
 
 func metrics(res http.ResponseWriter, req *http.Request) {

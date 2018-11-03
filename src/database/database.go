@@ -39,10 +39,8 @@ func (d *Database) Close() {
 }
 
 func (d *Database) createSchema() {
-	fmt.Println("TESTE")
 	switch sqliteVersion {
 	case "mysql":
-		fmt.Println("MYSQL")
 		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INT(10) NOT NULL AUTO_INCREMENT, name TEXT, memory INTEGER, code TEXT, pack TEXT, PRIMARY KEY (`id`))"
 		statement, _ := d.connection.Prepare(qFunctionTable)
 		statement.Exec()
@@ -52,7 +50,6 @@ func (d *Database) createSchema() {
 		statement.Exec()
 
 	case "sqlite3":
-		fmt.Println("SQLITE3")
 		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INTEGER PRIMARY KEY, name TEXT, memory INTEGER, code TEXT, pack TEXT)"
 		statement, _ := d.connection.Prepare(qFunctionTable)
 		statement.Exec()
@@ -70,11 +67,11 @@ func (d *Database) InsertFunction(name string, memory int, code string, pack str
 	checkErr(err)
 }
 
-func (d *Database) DeleteFunction(id int) {
-	statement, err := d.connection.Prepare("DELETE FROM function WHERE id=?")
+func (d *Database) DeleteFunction(name string) {
+	statement, err := d.connection.Prepare("DELETE FROM function WHERE name=?")
 	checkErr(err)
 
-	_, err = statement.Exec(id)
+	_, err = statement.Exec(name)
 	checkErr(err)
 }
 
