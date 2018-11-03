@@ -13,12 +13,11 @@ type Database struct {
 }
 
 type Function struct {
-	id     int
-	name   string
-	cpus   int
-	memory int
-	code   string
-	pack   string
+	Id     int
+	Name   string
+	Memory int
+	Code   string
+	Pack   string
 }
 
 const (
@@ -40,11 +39,9 @@ func (d *Database) Close() {
 }
 
 func (d *Database) createSchema() {
-	fmt.Println("TESTE")
 	switch sqliteVersion {
 	case "mysql":
-		fmt.Println("MYSQL")
-		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INT(10) NOT NULL AUTO_INCREMENT, name TEXT, cpus INTEGER, memory INTEGER, code TEXT, pack TEXT, PRIMARY KEY (`id`))"
+		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INT(10) NOT NULL AUTO_INCREMENT, name TEXT, memory INTEGER, code TEXT, pack TEXT, PRIMARY KEY (`id`))"
 		statement, _ := d.connection.Prepare(qFunctionTable)
 		statement.Exec()
 
@@ -53,8 +50,7 @@ func (d *Database) createSchema() {
 		statement.Exec()
 
 	case "sqlite3":
-		fmt.Println("SQLITE3")
-		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INTEGER PRIMARY KEY, name TEXT, cpus INTEGER, memory INTEGER, code TEXT, pack TEXT)"
+		var qFunctionTable = "CREATE TABLE IF NOT EXISTS function (id INTEGER PRIMARY KEY, name TEXT, memory INTEGER, code TEXT, pack TEXT)"
 		statement, _ := d.connection.Prepare(qFunctionTable)
 		statement.Exec()
 
@@ -64,27 +60,34 @@ func (d *Database) createSchema() {
 	}
 }
 
-func (d *Database) InsertFunction(name string, cpus, memory int, code string, pack string) {
-	statement, err := d.connection.Prepare("INSERT INTO function (name, cpus, memory, code, pack) VALUES (?, ?, ?, ?, ?)")
+func (d *Database) InsertFunction(name string, memory int, code string, pack string) {
+	statement, err := d.connection.Prepare("INSERT INTO function (name, memory, code, pack) VALUES (?, ?, ?, ?)")
 	checkErr(err)
-	_, err = statement.Exec(name, cpus, memory, code, pack)
-	checkErr(err)
-}
-
-func (d *Database) DeleteFunction(id int) {
-	statement, err := d.connection.Prepare("DELETE FROM function WHERE id=?")
-	checkErr(err)
-
-	_, err = statement.Exec(id)
+	_, err = statement.Exec(name, memory, code, pack)
 	checkErr(err)
 }
 
-func (d *Database) SelectFunction(name string) {
-	statement, err := d.connection.Prepare("SELECT FROM function WHERE name=?")
+func (d *Database) DeleteFunction(name string) {
+	statement, err := d.connection.Prepare("DELETE FROM function WHERE name=?")
 	checkErr(err)
 
 	_, err = statement.Exec(name)
 	checkErr(err)
+}
+
+func (d *Database) SelectFunction(name string) []Function {
+	rows, err := d.connection.Query("SELECT * FROM function WHERE name='" + name + "'")
+	checkErr(err)
+	var functionList = make([]Function, 0)
+
+	for rows.Next() {
+		function := Function{}
+		err = rows.Scan(&function.Id, &function.Name, &function.Memory, &function.Code, &function.Pack)
+		checkErr(err)
+		functionList = append(functionList, function)
+	}
+
+	return functionList
 }
 
 func (d *Database) SelectAllFunction() []Function {
@@ -94,7 +97,7 @@ func (d *Database) SelectAllFunction() []Function {
 
 	for rows.Next() {
 		function := Function{}
-		err = rows.Scan(&function.id, &function.name, &function.cpus, &function.memory, &function.code, &function.pack)
+		err = rows.Scan(&function.Id, &function.Name, &function.Memory, &function.Code, &function.Pack)
 		checkErr(err)
 		functionList = append(functionList, function)
 	}
@@ -109,7 +112,7 @@ func (d *Database) SelectByNameFunction(name string) []Function {
 
 	for rows.Next() {
 		function := Function{}
-		err = rows.Scan(&function.id, &function.name, &function.cpus, &function.memory, &function.code, &function.pack)
+		err = rows.Scan(&function.Id, &function.Name, &function.Memory, &function.Code, &function.Pack)
 		checkErr(err)
 		functionList = append(functionList, function)
 	}

@@ -1,12 +1,21 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
+	"./database"
 	"./docker"
+)
+
+var (
+	db = database.Database{}
 )
 
 func testDockerClient() {
@@ -40,16 +49,78 @@ func testDockerClient() {
 }
 
 func main() {
-	testDockerClient()
+	db.Connect()
+	//testDockerClient()
 
-	http.HandleFunc("/function", function)
+	http.HandleFunc("/function/", function)
 	http.HandleFunc("/metrics", metrics)
 	http.HandleFunc("/call", call)
 	http.ListenAndServe(":8000", nil)
 }
 
 func function(res http.ResponseWriter, req *http.Request) {
-	res.Write([]byte(fmt.Sprintf("[%v] %v\n", req.Method, req.RequestURI)))
+	switch req.Method {
+	case "GET":
+		fmt.Println("TESTE 1")
+		functionGet(res, req)
+	case "POST":
+		fmt.Println("TESTE 2")
+		functionPost(res, req)
+	case "DELETE":
+		fmt.Println("TESTE 3")
+		functionDelete(res, req)
+	}
+}
+
+func functionPost(res http.ResponseWriter, req *http.Request) {
+	name, memory, code, pack := ExtractFunction(res, req.Body)
+	fmt.Println(len(db.SelectFunction(name)))
+	if len(db.SelectFunction(name)) == 0 {
+		db.InsertFunction(name, memory, code, pack)
+		res.Write([]byte(fmt.Sprintf("Function Created [%v] %v\n", req.Method, req.RequestURI)))
+	} else {
+		http.Error(res, "Function already exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
+func ExtractFunction(res http.ResponseWriter, jsonBodyReq io.Reader) (name string, memory int, code, pack string) {
+	var jsonBody interface{}
+	err := json.NewDecoder(jsonBodyReq).Decode(&jsonBody)
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+		return
+	}
+
+	var bodyData = jsonBody.(map[string]interface{})
+	return bodyData["name"].(string), int(bodyData["memory"].(float64)), bodyData["code"].(string), bodyData["package"].(string)
+}
+
+func functionDelete(res http.ResponseWriter, req *http.Request) {
+	var name = strings.Split(req.RequestURI, "/")[2]
+
+	if len(db.SelectFunction(name)) > 0 {
+		db.DeleteFunction(name)
+		res.Write([]byte(fmt.Sprintf("Function Deleted [%v] %v\n", req.Method, req.RequestURI)))
+	} else {
+		http.Error(res, "Function don't exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
+func functionGet(res http.ResponseWriter, req *http.Request) {
+	var functions []database.Function
+	if !strings.EqualFold(strings.Split(req.RequestURI, "/")[2], "") {
+		var name = strings.Split(req.RequestURI, "/")[2]
+		fmt.Println("by name")
+		functions = db.SelectFunction(name)
+	} else {
+		functions = db.SelectAllFunction()
+	}
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(functions)
+	fmt.Println(functions)
+	fmt.Println("BUF:")
+	fmt.Println(buf)
+	res.Write(buf.Bytes())
 }
 
 func metrics(res http.ResponseWriter, req *http.Request) {
