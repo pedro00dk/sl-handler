@@ -23,6 +23,9 @@ var (
 func main() {
 	db.Connect()
 	dockerClient.Init()
+	if isConnected := dockerClient.IsConnected(); !isConnected {
+		fmt.Println("Failed to connect")
+	}
 
 	http.HandleFunc("/function/", function)
 	http.HandleFunc("/metrics", metrics)
@@ -101,28 +104,12 @@ func metrics(res http.ResponseWriter, req *http.Request) {
 }
 
 func call(res http.ResponseWriter, req *http.Request) {
-	client := docker.Client{}
-	client.Init()
-	if isConnected := client.IsConnected(); !isConnected {
-		fmt.Println("Failed to connect")
-	}
-	imageName := "function:function"
-	dockerfile, _ := ioutil.ReadFile("../dockerfiles/node/Dockerfile")
-	serverJs, _ := ioutil.ReadFile("../dockerfiles/node/server.js")
-	codeJs, _ := ioutil.ReadFile("../dockerfiles/node/code.js")
-	createImageTime := client.CreateImage(
-		imageName,
-		docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
-		docker.FileInfo{Name: "server.js", Text: string(serverJs)},
-		docker.FileInfo{Name: "code.js", Text: string(codeJs)},
-	)
-	fmt.Printf("## Create Image Time: %v\n", createImageTime)
-
-	containerID, createContainerTime := client.CreateContainer(imageName)
+	var imageName = strings.Split(req.RequestURI, "/")[2]
+	containerID, createContainerTime := dockerClient.CreateContainer(imageName)
 	fmt.Printf("## Container ID: %v\n", containerID)
 	fmt.Printf("## Create Container Time: %v\n", createContainerTime)
 
-	containerIP, startContainerTime := client.StartContainer(containerID)
+	containerIP, startContainerTime := dockerClient.StartContainer(containerID)
 	fmt.Printf("## Container IP: %v\n", containerIP)
 	fmt.Printf("## Start Container Time: %v\n", startContainerTime)
 
@@ -147,8 +134,8 @@ func call(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(code)
 	res.Write(body)
 
-	stopContainerTime := client.StopContainer(containerID)
-	deleteContainerTime := client.DeleteContainer(containerID)
+	stopContainerTime := dockerClient.StopContainer(containerID)
+	deleteContainerTime := dockerClient.DeleteContainer(containerID)
 	fmt.Printf("## Stop Container Time: %v\n", stopContainerTime)
 	fmt.Printf("## Delete Container Time: %v\n", deleteContainerTime)
 	// fmt.Println(client.DeleteImage(imageName))
