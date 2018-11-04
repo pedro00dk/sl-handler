@@ -83,7 +83,7 @@ func functionPost(res http.ResponseWriter, req *http.Request) {
 		db.InsertFunction(name, memory, code, pack)
 		var function = functionGetByName(name)
 		res.Write([]byte(function))
-		res.Write([]byte(fmt.Sprintf("Function Created [%v] %v\n", req.Method, req.RequestURI)))
+		res.Write([]byte(fmt.Sprintf("Function Created at %v%v\n", req.RequestURI, name)))
 	} else {
 		http.Error(res, "Function already exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
