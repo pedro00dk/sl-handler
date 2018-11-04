@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"./database"
-	"./docker"
+	"github.com/ricardorobson/sl-handler/src/database"
+	"github.com/ricardorobson/sl-handler/src/docker"
 )
 
 var (
