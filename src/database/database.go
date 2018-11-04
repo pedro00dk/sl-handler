@@ -69,12 +69,14 @@ func (d *Database) InsertFunction(name string, memory int, code string, pack str
 	checkErr(err)
 }
 
-func (d *Database) DeleteFunction(name string) {
+func (d *Database) DeleteFunction(name string) bool {
 	statement, err := d.connection.Prepare("DELETE FROM function WHERE name=?")
 	checkErr(err)
 
 	_, err = statement.Exec(name)
 	checkErr(err)
+
+	return err != nil
 }
 
 func (d *Database) SelectFunction(name string) string {

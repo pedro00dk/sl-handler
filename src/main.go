@@ -92,7 +92,7 @@ func functionPost(res http.ResponseWriter, req *http.Request) {
 		res.Write([]byte(fmt.Sprintf("Function Created at %v%v\n", req.RequestURI, name)))
 		res.WriteHeader(http.StatusCreated)
 	} else {
-		http.Error(res, "Function already exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(res, "Function already exist\n"+http.StatusText(http.StatusConflict), http.StatusConflict)
 	}
 }
 
@@ -113,8 +113,15 @@ func functionDelete(res http.ResponseWriter, req *http.Request) {
 
 	if len(db.SelectFunction(name)) > 0 {
 		dockerClient.DeleteImage(name)
-		db.DeleteFunction(name)
+		var sucess = db.DeleteFunction(name)
+		if !sucess {
+			res.Write([]byte(fmt.Sprintf("Cannot Delete function %v\n", name)))
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		res.Write([]byte(fmt.Sprintf("Function Deleted [%v] %v\n", req.Method, req.RequestURI)))
+		res.WriteHeader(http.StatusNoContent)
 	} else {
 		http.Error(res, "Function don't exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
