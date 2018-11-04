@@ -1,8 +1,8 @@
 /function
-[GET] / -> { [ { name, route } ] }
-[GET] /{name | route} -> { name, route, code }
+[GET] / -> [ { name, route } ]
+[GET] /{name} -> { name, route, code }
 [POST] / BODY(function.json)
-[DELETE] /{name | route}
+[DELETE] /{name}
 
 /metrics
 [GET] /?stardate={yyyy-mm-dd}&enddate={yyy-mm-dd} -> { ...name: {invocations, duration, errors, throttles, concurrent_exec, last_deploy, memory, cpu} }
