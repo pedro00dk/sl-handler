@@ -56,7 +56,13 @@ func functionGet(res http.ResponseWriter, req *http.Request) {
 	var argument = req.RequestURI[len(functionEndpoint):]
 	if !strings.EqualFold(argument, "") {
 		var function = functionGetByName(argument)
+		if function == "" {
+			res.Write([]byte(fmt.Sprintf("Function with name %v not found", argument)))
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
 		res.Write([]byte(function))
+
 	} else {
 		var functions = functionGetAll()
 		res.Write([]byte(functions))
@@ -84,6 +90,7 @@ func functionPost(res http.ResponseWriter, req *http.Request) {
 		var function = functionGetByName(name)
 		res.Write([]byte(function))
 		res.Write([]byte(fmt.Sprintf("Function Created at %v%v\n", req.RequestURI, name)))
+		res.WriteHeader(http.StatusCreated)
 	} else {
 		http.Error(res, "Function already exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
