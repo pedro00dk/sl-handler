@@ -1,7 +1,9 @@
 package database
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 
 	//_ "github.com/go-sql-driver/mysql"
@@ -75,22 +77,24 @@ func (d *Database) DeleteFunction(name string) {
 	checkErr(err)
 }
 
-func (d *Database) SelectFunction(name string) []Function {
+func (d *Database) SelectFunction(name string) string {
 	rows, err := d.connection.Query("SELECT * FROM function WHERE name='" + name + "'")
 	checkErr(err)
-	var functionList = make([]Function, 0)
 
-	for rows.Next() {
-		function := Function{}
-		err = rows.Scan(&function.Id, &function.Name, &function.Memory, &function.Code, &function.Pack)
-		checkErr(err)
-		functionList = append(functionList, function)
+	if !rows.Next() {
+		return ""
 	}
 
-	return functionList
+	function := Function{}
+	err = rows.Scan(&function.Id, &function.Name, &function.Memory, &function.Code, &function.Pack)
+	checkErr(err)
+
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(function)
+	return string(buf.Bytes())
 }
 
-func (d *Database) SelectAllFunction() []Function {
+func (d *Database) SelectAllFunction() string {
 	rows, err := d.connection.Query("SELECT * FROM function")
 	checkErr(err)
 	var functionList = make([]Function, 0)
@@ -102,7 +106,9 @@ func (d *Database) SelectAllFunction() []Function {
 		functionList = append(functionList, function)
 	}
 
-	return functionList
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(functionList)
+	return string(buf.Bytes())
 }
 
 func (d *Database) SelectByNameFunction(name string) []Function {
