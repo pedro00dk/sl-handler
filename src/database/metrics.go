@@ -10,15 +10,15 @@ import (
 
 // Metric stores metric collected from a function call
 type Metric struct {
-	function                  string
-	containerID               string
-	containerCreateTime       time.Duration
-	containerStartTime        time.Duration
-	applicationConnectionTime time.Duration
-	applicationRunTime        time.Duration
-	applicationCode           int
-	containerStopTime         time.Duration
-	containerDeleteTime       time.Duration
+	Function                  string
+	ContainerID               string
+	ContainerCreateTime       time.Duration
+	ContainerStartTime        time.Duration
+	ApplicationConnectionTime time.Duration
+	ApplicationRunTime        time.Duration
+	ApplicationCode           int
+	ContainerStopTime         time.Duration
+	ContainerDeleteTime       time.Duration
 }
 
 // MetricDB stores all metrics
@@ -40,7 +40,7 @@ func NewMetricBD(storePath string) MetricDB {
 // StartMetricDBRoutine starts the MetricDB subroutine
 func (mdb *MetricDB) StartMetricDBRoutine() (chan Metric, chan bool) {
 	metricChannel := make(chan Metric, 1000)
-	persistChannel := make(chan bool)
+	persistChannel := make(chan bool, 1)
 
 	go mdb.metricDBRoutine(metricChannel, persistChannel)
 
@@ -51,7 +51,7 @@ func (mdb *MetricDB) metricDBRoutine(metricChannel chan Metric, persistChannel c
 	for {
 		// save metric
 		metric := <-metricChannel
-		if len(metric.function) != 0 {
+		if len(metric.Function) != 0 {
 			mdb.metrics = append(mdb.metrics, metric)
 		}
 
