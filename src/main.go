@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,6 +19,13 @@ var (
 	dockerfile, _ = ioutil.ReadFile("../dockerfiles/node/Dockerfile")
 )
 
+const (
+	functionEndpoint = "/function/"
+	metricsEndpoint  = "/metrics"
+	callEndpoint     = "/call/"
+	port             = ":8000"
+)
+
 func main() {
 	db.Connect()
 	dockerClient.Init()
@@ -27,10 +33,10 @@ func main() {
 		fmt.Println("Failed to connect")
 	}
 
-	http.HandleFunc("/function/", function)
-	http.HandleFunc("/metrics", metrics)
-	http.HandleFunc("/call/", call)
-	http.ListenAndServe(":8000", nil)
+	http.HandleFunc(functionEndpoint, function)
+	http.HandleFunc(metricsEndpoint, metrics)
+	http.HandleFunc(callEndpoint, call)
+	http.ListenAndServe(port, nil)
 }
 
 func function(res http.ResponseWriter, req *http.Request) {
@@ -46,6 +52,31 @@ func function(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func functionGet(res http.ResponseWriter, req *http.Request) {
+	var argument = req.RequestURI[len(functionEndpoint):]
+	if !strings.EqualFold(argument, "") {
+		var function = functionGetByName(argument)
+		if function == "" {
+			res.Write([]byte(fmt.Sprintf("Function with name %v not found", argument)))
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		res.Write([]byte(function))
+
+	} else {
+		var functions = functionGetAll()
+		res.Write([]byte(functions))
+	}
+}
+
+func functionGetAll() string {
+	return string(db.SelectAllFunction())
+}
+
+func functionGetByName(argument string) string {
+	return string(db.SelectFunction(argument))
+}
+
 func functionPost(res http.ResponseWriter, req *http.Request) {
 	name, memory, code, pack := ExtractFunction(res, req.Body)
 	if len(db.SelectFunction(name)) == 0 {
@@ -56,9 +87,12 @@ func functionPost(res http.ResponseWriter, req *http.Request) {
 			docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
 		)
 		db.InsertFunction(name, memory, code, pack)
-		res.Write([]byte(fmt.Sprintf("Function Created [%v] %v\n", req.Method, req.RequestURI)))
+		var function = functionGetByName(name)
+		res.Write([]byte(function))
+		res.Write([]byte(fmt.Sprintf("Function Created at %v%v\n", req.RequestURI, name)))
+		res.WriteHeader(http.StatusCreated)
 	} else {
-		http.Error(res, "Function already exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(res, "Function already exist\n"+http.StatusText(http.StatusConflict), http.StatusConflict)
 	}
 }
 
@@ -79,24 +113,18 @@ func functionDelete(res http.ResponseWriter, req *http.Request) {
 
 	if len(db.SelectFunction(name)) > 0 {
 		dockerClient.DeleteImage(name)
-		db.DeleteFunction(name)
+		var sucess = db.DeleteFunction(name)
+		if !sucess {
+			res.Write([]byte(fmt.Sprintf("Cannot Delete function %v\n", name)))
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		res.Write([]byte(fmt.Sprintf("Function Deleted [%v] %v\n", req.Method, req.RequestURI)))
+		res.WriteHeader(http.StatusNoContent)
 	} else {
 		http.Error(res, "Function don't exist\n"+http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
-}
-
-func functionGet(res http.ResponseWriter, req *http.Request) {
-	var functions []database.Function
-	if !strings.EqualFold(strings.Split(req.RequestURI, "/")[2], "") {
-		var name = strings.Split(req.RequestURI, "/")[2]
-		functions = db.SelectFunction(name)
-	} else {
-		functions = db.SelectAllFunction()
-	}
-	var buf bytes.Buffer
-	json.NewEncoder(&buf).Encode(functions)
-	res.Write(buf.Bytes())
 }
 
 func metrics(res http.ResponseWriter, req *http.Request) {
