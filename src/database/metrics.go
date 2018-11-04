@@ -5,19 +5,20 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 // Metric stores metric collected from a function call
 type Metric struct {
 	function                  string
 	containerID               string
-	containerCreateTime       float64
-	containerStartTime        float64
-	applicationConnectionTime float64
-	applicationRunTime        float64
-	applicationCode           string
-	containerStopTime         float64
-	containerDeleteTime       float64
+	containerCreateTime       time.Duration
+	containerStartTime        time.Duration
+	applicationConnectionTime time.Duration
+	applicationRunTime        time.Duration
+	applicationCode           int
+	containerStopTime         time.Duration
+	containerDeleteTime       time.Duration
 }
 
 // MetricDB stores all metrics
