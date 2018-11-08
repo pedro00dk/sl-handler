@@ -1,0 +1,10 @@
+version: '2.1'
+
+services:
+  tg:
+    image: tg
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+        - 8000:8000
