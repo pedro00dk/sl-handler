@@ -1,0 +1,51 @@
+# Para instalar o jenkins através do docker
+docker run \
+  -u root \
+  --rm \
+  -d \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins-data:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  jenkinsci/blueocean
+
+docker ps #check container id
+docker exec <container-id> cat /var/jenkins_home/secrets/initialAdminPassword
+
+# Para instalar o jenkins diretamente no ubuntu
+wget -q -O - https://pkg.jenkins.io/debian/jenkins.io.key | sudo apt-key add -
+
+sudo sh -c 'echo deb http://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
+
+sudo apt update
+sudo apt install jenkins
+
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+## Se tiver erro de conexão com o docker, rodar os comandos abaixo
+sudo usermod -a -G docker jenkins
+sudo usermod -a -G root jenkins
+localhost:8080/restart
+
+# Após a instalação
+
+Instalar pluguins recomendados
+
+## Montar pipeline
+
+New item -> pipeline
+
+Github project -> https://github.com/ricardorobson/sl-handler
+
+### com esta configuração irá rodar uma nova build a cada 5 minutos
+Poll SCM -> H/5 * * * *
+
+Pipeline
+Definition: Pipeline script from SCM
+	SCM: Git
+		Repositories: https://github.com/ricardorobson/sl-handler
+
+
+
+
+
