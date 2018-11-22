@@ -12,7 +12,7 @@ RUN GOOS=linux go build -a -o ./app -- main.go
 FROM alpine:latest
 RUN apk --no-cache add gcc musl-dev ca-certificates
 WORKDIR /app
-COPY --from=builder app/ .
+COPY --from=builder . .
 CMD ./app
 LABEL Name=tg Version=0.0.1
 EXPOSE 8000
