@@ -27,6 +27,52 @@ type API struct {
 	baseURL string
 }
 
+func TestInsert(t *testing.T) {
+	prepareDatabase(t)
+	server := prepareServer(t)
+	// Close the server when test finishes
+	defer server.Close()
+
+	// Use Client & URL from our local test server
+	api := API{server.Client(), server.URL}
+
+	body, err := api.DoInsert()
+	
+	if  err != nil {
+		t.Errorf("API Error")
+	}
+
+	if !bytes.Equal(body, []byte(string(http.StatusCreated))){
+		t.Errorf("Response error")
+	}
+
+	cleanDatabase(t)
+
+}
+
+func TestDelete(t *testing.T) {
+	prepareDatabase(t)
+	server := prepareServer(t)
+	// Close the server when test finishes
+	defer server.Close()
+	populateDB(t)
+
+	// Use Client & URL from our local test server
+	api := API{server.Client(), server.URL}
+	body, err := api.DoDelete()
+	
+	if  err != nil {
+		t.Errorf("API Error")
+	}
+
+	if !bytes.Equal(body, []byte("Function Deleted")){
+		t.Errorf("Response error")
+	}
+
+	cleanDatabase(t)
+
+}
+
 func (api *API) DoInsert() ([]byte, error) {
 	resp, err := api.Client.Post(
 		api.baseURL + "/function",
@@ -60,22 +106,13 @@ func (api *API) DoDelete() ([]byte, error) {
 	return body, err
 }
 
-func prepareDatabase(t *testing.T) {
-	db.Connect()
-	dockerClient.Init()
-	if isConnected := dockerClient.IsConnected(); !isConnected {
-		t.Errorf("Failed to Connect")
-	}
-	
-}
-
+// http server that simules the API
 func prepareServer(t *testing.T) (*httptest.Server) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		
 		if req.URL.String() == "/function"{
 			name, memory, code, pack := ExtractFunction(rw, req.Body)
-			if len(db.SelectFunction(name)) == 0 {
-				
+			if len(db.SelectFunction(name)) == 0 {				
 				dockerClient.CreateImage(
 					name,
 					docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
@@ -108,36 +145,14 @@ func prepareServer(t *testing.T) (*httptest.Server) {
 	return server
 }
 
-func cleanDatabase(t *testing.T) {
-	// TO-DO: MAKE IT DYNAMIC
-	db.DeleteFunction("functest")
-	db.Close()
-}
-
-
-func TestInsert(t *testing.T) {
-	prepareDatabase(t)
-	server := prepareServer(t)
-	// Close the server when test finishes
-	defer server.Close()
-
-	// Use Client & URL from our local test server
-	api := API{server.Client(), server.URL}
-
-	body, err := api.DoInsert()
+func prepareDatabase(t *testing.T) {
+	db.Connect()
+	dockerClient.Init()
+	if isConnected := dockerClient.IsConnected(); !isConnected {
+		t.Errorf("Failed to Connect")
+	}
 	
-	if  err != nil {
-		t.Errorf("API Error")
-	}
-
-	if !bytes.Equal(body, []byte(string(http.StatusCreated))){
-		t.Errorf("Response error")
-	}
-
-	cleanDatabase(t)
-
 }
-
 
 func populateDB(t *testing.T) {
 	db.InsertFunction(
@@ -147,27 +162,10 @@ func populateDB(t *testing.T) {
 		  "{}")		  
 }
 
-func TestDelete(t *testing.T) {
-	prepareDatabase(t)
-	server := prepareServer(t)
-	// Close the server when test finishes
-	defer server.Close()
-	populateDB(t)
-
-	// Use Client & URL from our local test server
-	api := API{server.Client(), server.URL}
-	body, err := api.DoDelete()
-	
-	if  err != nil {
-		t.Errorf("API Error")
-	}
-
-	if !bytes.Equal(body, []byte("Function Deleted")){
-		t.Errorf("Response error")
-	}
-
-	cleanDatabase(t)
-
+func cleanDatabase(t *testing.T) {
+	// TO-DO: MAKE IT DYNAMIC
+	db.DeleteFunction("functest")
+	db.Close()
 }
 
 // util
