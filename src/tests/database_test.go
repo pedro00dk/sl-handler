@@ -57,14 +57,14 @@ func prepareServer(t *testing.T) (*httptest.Server) {
 		if req.URL.String() == "/function"{
 			name, memory, code, pack := ExtractFunction(rw, req.Body)
 			if len(db.SelectFunction(name)) == 0 {
-				/*
+				
 				dockerClient.CreateImage(
 					name,
 					docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
 					docker.FileInfo{Name: "server.js", Text: string(serverJS)},
 					docker.FileInfo{Name: "package.json", Text: pack},
 					docker.FileInfo{Name: "code.js", Text: code},
-				)*/
+				)
 				
 				db.InsertFunction(name, memory, code, pack)
 				rw.Write([]byte(string(http.StatusCreated)))
