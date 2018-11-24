@@ -117,8 +117,8 @@ func functionDelete(res http.ResponseWriter, req *http.Request) {
 
 	if len(db.SelectFunction(name)) > 0 {
 		dockerClient.DeleteImage(name)
-		var sucess = db.DeleteFunction(name)
-		if !sucess {
+		var success = db.DeleteFunction(name)
+		if !success {
 			res.Write([]byte(fmt.Sprintf("Cannot Delete function %v\n", name)))
 			res.WriteHeader(http.StatusBadRequest)
 			return
