@@ -75,6 +75,15 @@ func prepareServer(t *testing.T) (*httptest.Server) {
 		if req.URL.String() == "/function"{
 			name, memory, code, pack := ExtractFunction(rw, req.Body)
 			if len(db.SelectFunction(name)) == 0 {
+				
+				dockerClient.CreateImage(
+					name,
+					docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
+					docker.FileInfo{Name: "server.js", Text: string(serverJS)},
+					docker.FileInfo{Name: "package.json", Text: pack},
+					docker.FileInfo{Name: "code.js", Text: code},
+				)
+				
 				db.InsertFunction(name, memory, code, pack)
 				rw.Write([]byte(string(http.StatusCreated)))
 			} else {
@@ -82,8 +91,8 @@ func prepareServer(t *testing.T) (*httptest.Server) {
 			}
 		} else if req.URL.String() == "/delete" {
 			name := ExtractName(rw, req.Body)
+			dockerClient.DeleteImage(name)
 			var success = db.DeleteFunction(name)
-			fmt.Println(success)
 			if success {
 				rw.Write([]byte("Function Deleted"))
 			} else{
@@ -102,7 +111,6 @@ func prepareServer(t *testing.T) (*httptest.Server) {
 func cleanDatabase(t *testing.T) {
 	// TO-DO: MAKE IT DYNAMIC
 	db.DeleteFunction("functest")
-	//dockerClient.DeleteImage("functest")
 	db.Close()
 }
 
@@ -136,8 +144,7 @@ func populateDB(t *testing.T) {
 		"functest",
 		 200,
 	 	"module.exports.helloWorld = (req, res) => {\n    res.send(\"hello world\")\n}",
-		  "{}")
-		  
+		  "{}")		  
 }
 
 func TestDelete(t *testing.T) {
