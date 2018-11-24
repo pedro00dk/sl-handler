@@ -76,7 +76,7 @@ func (d *Database) DeleteFunction(name string) bool {
 	_, err = statement.Exec(name)
 	checkErr(err)
 
-	return err != nil
+	return err == nil
 }
 
 func (d *Database) SelectFunction(name string) string {

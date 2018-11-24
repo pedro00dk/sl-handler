@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"fmt"
 )
 
 var (
@@ -44,35 +45,52 @@ func (api *API) DoInsert() ([]byte, error) {
 	return body, err
 }
 
+func (api *API) DoDelete() ([]byte, error) {
+	resp, err := api.Client.Post(
+		api.baseURL + "/delete",
+		"application/json",
+	 	bytes.NewBuffer([]byte(`{
+			"name": "functest"
+		}`)))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	return body, err
+}
+
 func prepareDatabase(t *testing.T) {
 	db.Connect()
 	dockerClient.Init()
 	if isConnected := dockerClient.IsConnected(); !isConnected {
 		t.Errorf("Failed to Connect")
 	}
+	
 }
 
 func prepareServer(t *testing.T) (*httptest.Server) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		
 		if req.URL.String() == "/function"{
 			name, memory, code, pack := ExtractFunction(rw, req.Body)
 			if len(db.SelectFunction(name)) == 0 {
-				
-				dockerClient.CreateImage(
-					name,
-					docker.FileInfo{Name: "Dockerfile", Text: string(dockerfile)},
-					docker.FileInfo{Name: "server.js", Text: string(serverJS)},
-					docker.FileInfo{Name: "package.json", Text: pack},
-					docker.FileInfo{Name: "code.js", Text: code},
-				)
-				
 				db.InsertFunction(name, memory, code, pack)
 				rw.Write([]byte(string(http.StatusCreated)))
 			} else {
 				http.Error(rw, "Function already exist\n"+http.StatusText(http.StatusConflict), http.StatusConflict)
 			}
-				
-		}else {
+		} else if req.URL.String() == "/delete" {
+			name := ExtractName(rw, req.Body)
+			var success = db.DeleteFunction(name)
+			fmt.Println(success)
+			if success {
+				rw.Write([]byte("Function Deleted"))
+			} else{
+				rw.Write([]byte(fmt.Sprintf("Cannot Delete function %v\n", name)))
+			}
+
+		} else {
 			t.Errorf("Insert an URL well formatted")
 		}
 		
@@ -84,11 +102,12 @@ func prepareServer(t *testing.T) (*httptest.Server) {
 func cleanDatabase(t *testing.T) {
 	// TO-DO: MAKE IT DYNAMIC
 	db.DeleteFunction("functest")
+	//dockerClient.DeleteImage("functest")
 	db.Close()
 }
 
 
-func TestInsertOnDatabase(t *testing.T) {
+func TestInsert(t *testing.T) {
 	prepareDatabase(t)
 	server := prepareServer(t)
 	// Close the server when test finishes
@@ -96,6 +115,7 @@ func TestInsertOnDatabase(t *testing.T) {
 
 	// Use Client & URL from our local test server
 	api := API{server.Client(), server.URL}
+
 	body, err := api.DoInsert()
 	
 	if  err != nil {
@@ -103,6 +123,39 @@ func TestInsertOnDatabase(t *testing.T) {
 	}
 
 	if !bytes.Equal(body, []byte(string(http.StatusCreated))){
+		t.Errorf("Response error")
+	}
+
+	cleanDatabase(t)
+
+}
+
+
+func populateDB(t *testing.T) {
+	db.InsertFunction(
+		"functest",
+		 200,
+	 	"module.exports.helloWorld = (req, res) => {\n    res.send(\"hello world\")\n}",
+		  "{}")
+		  
+}
+
+func TestDelete(t *testing.T) {
+	prepareDatabase(t)
+	server := prepareServer(t)
+	// Close the server when test finishes
+	defer server.Close()
+	populateDB(t)
+
+	// Use Client & URL from our local test server
+	api := API{server.Client(), server.URL}
+	body, err := api.DoDelete()
+	
+	if  err != nil {
+		t.Errorf("API Error")
+	}
+
+	if !bytes.Equal(body, []byte("Function Deleted")){
 		t.Errorf("Response error")
 	}
 
@@ -121,6 +174,18 @@ func ExtractFunction(res http.ResponseWriter, jsonBodyReq io.Reader) (name strin
 
 	var bodyData = jsonBody.(map[string]interface{})
 	return bodyData["name"].(string), int(bodyData["memory"].(float64)), bodyData["code"].(string), bodyData["package"].(string)
+}
+
+func ExtractName(res http.ResponseWriter, jsonBodyReq io.Reader) (name string) {
+	var jsonBody interface{}
+	err := json.NewDecoder(jsonBodyReq).Decode(&jsonBody)
+	if err != nil {
+		http.Error(res, err.Error(), 400)
+		return
+	}
+
+	var bodyData = jsonBody.(map[string]interface{})
+	return bodyData["name"].(string)
 }
 
 func functionGetByName(argument string) string {
