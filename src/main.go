@@ -15,11 +15,11 @@ import (
 
 var (
 	db                            = database.Database{}
-	mdb                           = database.NewMetricBD("../metrics.json")
+	mdb                           = database.NewMetricBD("metrics.json")
 	mdbMetricChan, mdbPersistChan = mdb.StartMetricDBRoutine()
 	dockerClient                  = docker.Client{}
-	dockerfile, _                 = ioutil.ReadFile("../dockerfiles/node/Dockerfile")
-	serverJS, _                   = ioutil.ReadFile("../dockerfiles/node/server.js")
+	dockerfile, _                 = ioutil.ReadFile("dockerfiles/node/Dockerfile")
+	serverJS, _                   = ioutil.ReadFile("dockerfiles/node/server.js")
 )
 
 const (
